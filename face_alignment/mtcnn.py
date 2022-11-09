@@ -16,9 +16,9 @@ from mtcnn_pytorch.src.align_trans import get_reference_facial_points, warp_and_
 
 
 class MTCNN():
-    def __init__(self, device: str = 'cuda:0', crop_size: Tuple[int, int] = (112, 112)):
+    def __init__(self, device: str = 'cuda:1', crop_size: Tuple[int, int] = (112, 112)):
 
-        assert device in ['cuda:0', 'cpu']
+        assert device in ['cuda:1', 'cpu']
         self.device = torch.device(device)
         assert crop_size in [(112, 112), (96, 112)]
         self.crop_size = crop_size
@@ -46,8 +46,8 @@ class MTCNN():
     def align(self, img):
         _, landmarks = self.detect_faces(img, self.min_face_size, self.thresholds, self.nms_thresholds, self.factor)
         facial5points = [[landmarks[0][j], landmarks[0][j + 5]] for j in range(5)]
-        warped_face = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=self.crop_size)
-        return Image.fromarray(warped_face)
+        warped_face, tfm = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=self.crop_size)
+        return Image.fromarray(warped_face), tfm
 
     def align_multi(self, img, limit=None):
         boxes, landmarks = self.detect_faces(img, self.min_face_size, self.thresholds, self.nms_thresholds, self.factor)
@@ -57,9 +57,9 @@ class MTCNN():
         faces = []
         for landmark in landmarks:
             facial5points = [[landmark[j], landmark[j + 5]] for j in range(5)]
-            warped_face = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=self.crop_size)
+            warped_face, tfm = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=self.crop_size)
             faces.append(Image.fromarray(warped_face))
-        return boxes, faces
+        return boxes, faces, tfm
 
     def detect_faces(self, image, min_face_size, thresholds, nms_thresholds, factor):
         """

@@ -38,9 +38,9 @@ def get_reference_facial_points(output_size=None,
     ----------
         get reference 5 key points according to crop settings:
         0. Set default crop_size:
-            if default_square: 
+            if default_square:
                 crop_size = (112, 112)
-            else: 
+            else:
                 crop_size = (96, 112)
         1. Pad the crop_size by inner_padding_factor in each side;
         2. Resize crop_size into (output_size - outer_padding*2),
@@ -60,7 +60,7 @@ def get_reference_facial_points(output_size=None,
             else:
                 default crop_size = (96, 112);
         !!! make sure, if output_size is not None:
-                (output_size - outer_padding) 
+                (output_size - outer_padding)
                 = some_scale * (default crop_size * (1.0 + inner_padding_factor))
     Returns:
     ----------
@@ -301,4 +301,4 @@ def warp_and_crop_face(src_img,
 
     face_img = cv2.warpAffine(src_img, tfm, (crop_size[0], crop_size[1]))
 
-    return face_img
+    return face_img, tfm
