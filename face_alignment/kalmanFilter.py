@@ -1,27 +1,32 @@
 import numpy as np
-class extendedKalmanFilter():
-    def __init__(self, A, Q, C, H, num_steps):
+
+class kalmanFilter():
+    def __init__(self, A, Q, C, H, num_steps, initial_signal_estimate,
+                 initial_MSE_estimate):
         self.A = A  # state transition matrix
         self.Q = Q  # covariances of driving noise & observation noise
         self.C = C  # varainces of observation errors
         self.H = H  # Observation matrix relating signal to observation
         self.num_steps = num_steps
 
-        self.x_n = np.zeros((2, self.num_steps))
+        # keep list of x's
+        self.x_n = np.zeros((self.H.shape[0], self.num_steps))
 
-        self.estimated_signal = np.zeros((4, self.num_steps+1))
-        self.estimated_MSE = np.zeros((self.num_steps+1, 4, 4))
+        self.estimated_signal = np.zeros((self.A.shape[0], self.num_steps+1))
+        self.estimated_MSE = np.zeros((self.num_steps+1,
+                                       *self.A.shape))
         self.predicted_signal = np.zeros_like(self.estimated_signal)
         self.predicted_MSE = np.zeros_like(self.estimated_MSE)
 
-        self.K = np.zeros((self.num_steps+1, 4, 2))
-        # self.h = np.zeros((2, self.num_steps+1))
-        self.H = np.zeros((self.num_steps+1, 2, 4))
+        self.K = np.zeros((self.num_steps+1, *self.H.shape[::-1]))
+        self.Hn = np.zeros((self.num_steps+1, *self.H.shape))
 
-    def initialize(self, signal_start, MSE_start):
+        # initialize
+        self.estimated_signal[:, 0] = initial_signal_estimate
+        self.estimated_MSE[0, :, :] = initial_MSE_estimate
 
-        self.estimated_signal[:, 0] = signal_start
-        self.estimated_MSE[0, :, :] = MSE_start
+        self.prev_ii = 0
+        self.missed_frames = 0
 
     def predict(self, nn):
 
@@ -29,23 +34,9 @@ class extendedKalmanFilter():
         self.predicted_MSE[nn, :, :] = self.A @ self.estimated_MSE[nn-1, :, :] @ \
             self.A.transpose() + self.Q
 
-    '''
-    def calculate_hs(self, nn):
+    def calculate_Hn(self, nn, step_size):
 
-        self.h[:, nn] = np.array( (np.sqrt(self.predicted_signal[0, nn]**2 + \
-                                          self.predicted_signal[1, nn]**2),
-                                 atan2(self.predicted_signal[1, nn],
-                                       self.predicted_signal[0, nn]) ))
-
-    def calculate_Hn(self, nn):
-
-        R = np.sqrt(np.sum(self.predicted_signal[:, nn]**2))
-
-        self.H[nn, 0, 0] = self.predicted_signal[0, nn] / R
-        self.H[nn, 0, 1] = self.predicted_signal[1, nn] / R
-        self.H[nn, 1, 0] = -self.predicted_signal[1, nn] / (R**2)
-        self.H[nn, 1, 1] = self.predicted_signal[0, nn] / (R**2)
-    '''
+        self.Hn[nn, :, :6] = step_size * np.eye(6)
 
     def calculate_K(self, nn):
 
@@ -67,13 +58,11 @@ class extendedKalmanFilter():
             (np.eye(4) - self.K[nn, :, :] @ self.H[nn, :, :]) @ \
             self.predicted_MSE[nn, :, :]
 
-    def run(self, observations):
+    def predict_and_estimate(self, x, nn):
 
-        self.x_n = observations
-
-        for nn in range(1, self.num_steps+1):
-            self.predict(nn)
-            # self.calculate_hs(nn)
-            self.calculate_Hn(nn)
-            self.calculate_K(nn)
-            self.estimate(nn)
+        step_size = nn - self.prev_nn
+        self.x_n[:, nn] = x
+        self.predict(nn)
+        self.calculate_Hn(nn, step_size)
+        self.calculate_K(nn)
+        self.estimate(nn)
