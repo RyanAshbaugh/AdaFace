@@ -103,7 +103,7 @@ if __name__ == '__main__':
     model = load_pretrained_model('ir_101')
 
     pad_factor = 2.0
-    save_output_images = True
+    save_output_images = False
 
     detections_path = ('/research/iprobe-ashbau12/hpcc_briar/TRANSFER/'
                        'bts1.1_bts2_face_detect.csv.tgz')
@@ -140,18 +140,21 @@ if __name__ == '__main__':
     frame_nums = []
     warp_params = []
 
+    pickle.dump(labels.frame_number.to_numpy().astype(int),
+                open(osp.join(output_root, 'detected_frame_numbers.pkl'), 'wb'))
+
     label_index = 0
     with tqdm(total=num_frames) as progress_bar:
         for ii in range(num_frames):
             status = cap.grab()
             assert status, f"No frame at {ii} from video reader: {video_path}"
 
-            label_frame_num = int(labels.loc[ii, 'frame_number'])
+            label_frame_num = int(labels.loc[label_index, 'frame_number'])
 
             # print('label_frame_num: ', label_frame_num)
             if label_frame_num == ii:
                 ret, image = cap.retrieve()
-                image_pil = Image.fromarray(image.astype('uint8'), 'RGB')
+                image_pil = Image.fromarray(image[:, :, ::-1].astype('uint8'), 'RGB')
 
                 roi = labels[labels.columns[1:8]].iloc[label_index]
                 x1, bbox_width, y1, bbox_height = expandBBoxToBeSquare(roi,
@@ -180,7 +183,7 @@ if __name__ == '__main__':
 
                     if save_output_images:
                         aligned_bgr_img = np.asarray(aligned_rgb_img,
-                                                     dtype=np.uint8)
+                                                     dtype=np.uint8)[:, :, ::-1]
                         cv2.imwrite(osp.join(image_folder, f'{ii}.png'),
                                     aligned_bgr_img)
 
