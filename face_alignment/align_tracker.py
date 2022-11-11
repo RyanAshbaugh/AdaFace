@@ -1,13 +1,15 @@
 import sys
 import os
 
-from face_alignment import mtcnn_tracker
+from face_alignment import mtcnn
 import argparse
 from PIL import Image
 from tqdm import tqdm
 import random
 from datetime import datetime
-mtcnn_model = mtcnn_tracker.MTCNNTracker(device='cuda:1', crop_size=(112, 112))
+# mtcnn_model = mtcnn_tracker.MTCNNTracker(device='cuda:1', crop_size=(112, 112))
+mtcnn_model = mtcnn.MTCNN(device='cuda:1', crop_size=(112, 112))
+
 
 def add_padding(pil_img, top, right, bottom, left, color=(0,0,0)):
     width, height = pil_img.size
@@ -27,11 +29,14 @@ def get_aligned_face(image_path, rgb_pil_image=None):
     try:
         bboxes, faces, tfm = mtcnn_model.align_multi(img, limit=1)
         face = faces[0]
+        tfm = tfm[0]
     except Exception as e:
         # print('Face detection Failed due to error.')
         # print(e)
         face = None
         tfm = None
+
+
 
     return face, tfm
 

@@ -36,7 +36,7 @@ class MTCNNTracker(MTCNN):
         H = np.zeros((6, 12))
         H[:6, :6] = np.eye(6)
 
-        self.kalman = kalmanFilter(A, Q, C, H, self.num_frames,
+        self.kalman = kalmanFilter(A, Q, H, C, self.num_frames,
                                    initial_signal_estimate,
                                    initial_MSE_estimate)
 
@@ -48,9 +48,12 @@ class MTCNNTracker(MTCNN):
             boxes = boxes[:limit]
             landmarks = landmarks[:limit]
         faces = []
+
         for landmark in landmarks:
             facial5points = [[landmark[j], landmark[j + 5]] for j in range(5)]
             warped_face, tfm = warp_and_crop_face(
                 np.array(img), facial5points, self.refrence, crop_size=self.crop_size)
             faces.append(Image.fromarray(warped_face))
+            tfm_flat = np.concatenate((tfm[:2, :2].flatten(), tfm[:, 2]))
+
         return boxes, faces, tfm
