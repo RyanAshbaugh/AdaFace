@@ -16,9 +16,9 @@ from mtcnn_pytorch.src.align_trans import get_reference_facial_points, warp_and_
 
 
 class MTCNN():
-    def __init__(self, device: str = 'cuda:1', crop_size: Tuple[int, int] = (112, 112)):
+    def __init__(self, device: str = 'cuda:0', crop_size: Tuple[int, int] = (112, 112)):
 
-        assert device in ['cuda:1', 'cpu']
+        assert device.split(':')[0] in ['cuda', 'cpu']
         self.device = torch.device(device)
         assert crop_size in [(112, 112), (96, 112)]
         self.crop_size = crop_size
@@ -55,11 +55,13 @@ class MTCNN():
             boxes = boxes[:limit]
             landmarks = landmarks[:limit]
         faces = []
+        tfms = []
         for landmark in landmarks:
             facial5points = [[landmark[j], landmark[j + 5]] for j in range(5)]
             warped_face, tfm = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=self.crop_size)
             faces.append(Image.fromarray(warped_face))
-        return boxes, faces, tfm
+            tfms.append(tfm)
+        return boxes, faces, tfms
 
     def detect_faces(self, image, min_face_size, thresholds, nms_thresholds, factor):
         """

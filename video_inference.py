@@ -4,7 +4,8 @@ import pickle
 import os
 from os import path as osp
 import cv2
-from face_alignment import align, kalmanFilter
+from face_alignment import align
+from face_alignment.kalmanFilter import kalmanFilter
 import numpy as np
 from tqdm import tqdm
 from PIL import Image
@@ -176,8 +177,9 @@ if __name__ == '__main__':
 
                 aligned_rgb_img, tfm = align.get_aligned_face('', image_pil)
 
-                tfm_flat = np.concatenate((tfm[:2, :2].flatten(), tfm[:, 2]))
-                kalman_filter.predict_and_run(tfm_flat, ii)
+                if tfm is not None:
+                    tfm = np.concatenate((tfm[:2, :2].flatten(), tfm[:, 2]))
+                kalman_filter.predict_and_estimate(tfm, ii)
 
                 if aligned_rgb_img is not None:
                     bgr_tensor_input = to_input(aligned_rgb_img)
@@ -208,3 +210,5 @@ if __name__ == '__main__':
                 open(osp.join(output_root, 'frame_nums.pkl'), 'wb'))
     pickle.dump(warp_params,
                 open(osp.join(output_root, 'warp_params.pkl'), 'wb'))
+    pickle.dump(kalman_filter,
+                open(osp.join(output_root, 'kalman_filter.pkl'), 'wb'))
