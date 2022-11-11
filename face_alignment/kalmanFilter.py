@@ -9,7 +9,7 @@ class kalmanFilter():
         self.H = H
         self.C = C  # varainces of observation errors
         '''
-        self.num_steps = num_steps + 1
+        self.num_steps = num_steps
 
         # state transition matrix for warp params
         self.A = np.eye(12)
@@ -20,15 +20,13 @@ class kalmanFilter():
         self.Q = np.zeros((12, 12))
         self.Q[6:, 6:] = np.eye(6) * sigma_u**2
 
-        '''
         sigma_warp = np.sqrt(0.1)
         sigma_warps = sigma_warp**2 * np.ones(4)
         sigma_translation = np.sqrt(1)
         sigma_translations = sigma_translation**2 * np.ones(2)
         sigmas_observations = np.concatenate((sigma_warps, sigma_translations))
 
-        # C = sigmas_observations @ np.eye(6)
-            '''
+        self.C = np.diag(sigmas_observations)
 
         # setup initial values for params and their derivatives
         initial_signal_estimate = np.zeros(12)
@@ -36,6 +34,8 @@ class kalmanFilter():
 
         self.H = np.zeros((6, 12))
         self.H[:6, :6] = np.eye(6)
+
+        self.I = np.eye(12)
 
         # keep list of x's
         self.x_n = np.zeros((self.H.shape[0], self.num_steps))
@@ -88,19 +88,19 @@ class kalmanFilter():
         self.estimated_signal[:, nn] = self.predicted_signal[:, nn] + \
             self.K[nn, :, :] @ self.innovation
         self.estimated_MSE[nn, :, :] = \
-            (np.eye(4) - self.K[nn, :, :] @ self.H) @ \
+            (self.I - self.K[nn, :, :] @ self.H) @ \
             self.predicted_MSE[nn, :, :]
 
     def predict_and_estimate(self, x, nn):
 
         # add 1 to nn, since initialization is 0=n-1
-        nn += 1
+        self.predict(nn)
 
         # if no data, leave x_n 0, and gain zero which will zero out innovation
+        kk = nn-1
         if x is not None:
-            self.x_n[:, nn] = x
+            self.x_n[:, kk] = x
             self.calculate_K(nn)
 
-        self.predict(nn)
         self.calculate_innovation(nn)
         self.estimate(nn)
