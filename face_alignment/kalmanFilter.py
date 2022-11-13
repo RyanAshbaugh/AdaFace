@@ -2,7 +2,10 @@ import numpy as np
 
 
 class kalmanFilter():
-    def __init__(self, num_steps):
+    def __init__(self,
+                 num_steps,
+                 sigma_rot=np.sqrt(0.1),
+                 sigma_translation=np.sqrt(1)):
         '''
         self.A = A  # state transition matrix
         self.Q = Q  # covariances of driving noise & observation noise
@@ -20,11 +23,12 @@ class kalmanFilter():
         self.Q = np.zeros((12, 12))
         self.Q[6:, 6:] = np.eye(6) * sigma_u**2
 
-        sigma_warp = np.sqrt(0.1)
-        sigma_warps = sigma_warp**2 * np.ones(4)
-        sigma_translation = np.sqrt(1)
-        sigma_translations = sigma_translation**2 * np.ones(2)
-        sigmas_observations = np.concatenate((sigma_warps, sigma_translations))
+        self.sigma_rot = sigma_rot
+        self.sigma_rots = self.sigma_rot**2 * np.ones(4)
+        self.sigma_translation = sigma_translation
+        self.sigma_translations = self.sigma_translation**2 * np.ones(2)
+        sigmas_observations = np.concatenate((self.sigma_rots,
+                                              self.sigma_translations))
 
         self.C = np.diag(sigmas_observations)
 
