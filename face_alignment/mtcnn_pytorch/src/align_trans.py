@@ -299,6 +299,8 @@ def warp_and_crop_face(src_img,
 #    #print(('tfm.dtype:' + str(tfm.dtype))
 #    #print( tfm
 
+    # print('src_img.shape: ', src_img.shape)
+    # print('tfm: ', tfm)
     face_img = cv2.warpAffine(src_img, tfm, (crop_size[0], crop_size[1]))
 
     return face_img, tfm
