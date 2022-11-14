@@ -98,6 +98,7 @@ class kalmanFilter():
     def predict_and_estimate(self, x, nn):
 
         # add 1 to nn, since initialization is 0=n-1
+        nn += 1
         self.predict(nn)
 
         # if no data, leave x_n 0, and gain zero which will zero out innovation
