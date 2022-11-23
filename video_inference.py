@@ -123,14 +123,10 @@ if __name__ == '__main__':
 
     if save_output_images:
         image_folder = osp.join(output_root, 'images')
-        kalman_small_image_folder = osp.join(output_root, 'images_kf_small')
-        kalman_medium_image_folder = osp.join(output_root, 'images_kf_med')
-        kalman_large_image_folder = osp.join(output_root, 'images_kf_large')
+        kalman_image_folder = osp.join(output_root, 'images_kf')
         if not osp.exists(image_folder):
             os.makedirs(image_folder)
-            os.makedirs(kalman_small_image_folder)
-            os.makedirs(kalman_medium_image_folder)
-            os.makedirs(kalman_large_image_folder)
+            os.makedirs(kalman_image_folder)
 
     video_rows = detections_df.media_path == video_fname
 
@@ -144,15 +140,9 @@ if __name__ == '__main__':
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-    kalman_filter_small = kalmanFilter(num_frames,
+    kalman_filter = kalmanFilter(num_frames,
                                        np.sqrt(0.01),
                                        np.sqrt(0.1))
-    kalman_filter_medium = kalmanFilter(num_frames,
-                                        np.sqrt(0.1),
-                                        np.sqrt(1))
-    kalman_filter_large = kalmanFilter(num_frames,
-                                       np.sqrt(1),
-                                       np.sqrt(10))
 
     features = []
     frame_nums = []
@@ -190,49 +180,28 @@ if __name__ == '__main__':
                 roi_image_pil = Image.fromarray(
                     roi_image[:, :, ::-1].astype('uint8'), 'RGB')
 
+                # same original alignment step
                 aligned_rgb_img, tfm = align.get_aligned_face('',
                                                               roi_image_pil)
 
                 if tfm is not None:
                     tfm = np.concatenate((tfm[:2, :2].flatten(), tfm[:, 2]))
-                kalman_filter_small.predict_and_estimate(tfm, ii)
-                kalman_filter_medium.predict_and_estimate(tfm, ii)
-                kalman_filter_large.predict_and_estimate(tfm, ii)
-
+                kalman_filter.predict_and_estimate(tfm, ii)
 
                 kalman_tfm = np.array(
-                    ((*kalman_filter_small.estimated_signal[:2, ii],
-                      kalman_filter_small.estimated_signal[4, ii]),
-                     (*kalman_filter_small.estimated_signal[2:4, ii],
-                      kalman_filter_small.estimated_signal[5, ii])))
-                kalman_small_img = cv2.warpAffine(
+                    ((*kalman_filter.estimated_signal[:2, ii],
+                      kalman_filter.estimated_signal[4, ii]),
+                     (*kalman_filter.estimated_signal[2:4, ii],
+                      kalman_filter.estimated_signal[5, ii])))
+                kalman_img = cv2.warpAffine(
                     roi_image,
                     kalman_tfm,
-                    (crop_size[0], crop_size[1]))
-                kalman_medium_img = cv2.warpAffine(
-                    roi_image,
-                    np.array(((*kalman_filter_medium.estimated_signal[:2, ii],
-                               kalman_filter_medium.estimated_signal[4, ii]),
-                              (*kalman_filter_medium.estimated_signal[2:4, ii],
-                               kalman_filter_medium.estimated_signal[5, ii]))),
-                    (crop_size[0], crop_size[1]))
-                kalman_large_img = cv2.warpAffine(
-                    roi_image,
-                    np.array(((*kalman_filter_large.estimated_signal[:2, ii],
-                               kalman_filter_large.estimated_signal[4, ii]),
-                              (*kalman_filter_large.estimated_signal[2:4, ii],
-                               kalman_filter_large.estimated_signal[5, ii]))),
                     (crop_size[0], crop_size[1]))
 
                 if save_output_images:
                     # also save kalman images
-                    cv2.imwrite(osp.join(kalman_small_image_folder, f'{ii}.png'),
-                                kalman_small_img)
-                    cv2.imwrite(osp.join(kalman_medium_image_folder,
-                                            f'{ii}.png'),
-                                kalman_medium_img)
-                    cv2.imwrite(osp.join(kalman_large_image_folder, f'{ii}.png'),
-                                kalman_large_img)
+                    cv2.imwrite(osp.join(kalman_image_folder, f'{ii}.png'),
+                                kalman_img)
 
                     if aligned_rgb_img is not None:
                         bgr_tensor_input = to_input(aligned_rgb_img)
@@ -245,8 +214,6 @@ if __name__ == '__main__':
                             dtype=np.uint8)[:, :, ::-1]
                         cv2.imwrite(osp.join(image_folder, f'{ii}.png'),
                                     aligned_bgr_img)
-
-
 
                 label_index += 1
                 if label_index == labels.shape[0]:
@@ -261,9 +228,5 @@ if __name__ == '__main__':
                 open(osp.join(output_root, 'frame_nums.pkl'), 'wb'))
     pickle.dump(warp_params,
                 open(osp.join(output_root, 'warp_params.pkl'), 'wb'))
-    pickle.dump(kalman_filter_small,
-                open(osp.join(output_root, 'kalman_filter_small.pkl'), 'wb'))
-    pickle.dump(kalman_filter_medium,
-                open(osp.join(output_root, 'kalman_filter_medium.pkl'), 'wb'))
-    pickle.dump(kalman_filter_large,
-                open(osp.join(output_root, 'kalman_filter_large.pkl'), 'wb'))
+    pickle.dump(kalman_filter,
+                open(osp.join(output_root, 'kalman_filter.pkl'), 'wb'))
