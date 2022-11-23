@@ -224,32 +224,28 @@ if __name__ == '__main__':
                                kalman_filter_large.estimated_signal[5, ii]))),
                     (crop_size[0], crop_size[1]))
 
-                if aligned_rgb_img is not None:
-                    bgr_tensor_input = to_input(aligned_rgb_img)
-                    feature, _ = model(bgr_tensor_input)
-                    features.append(feature.detach())
-                    frame_nums.append(ii)
-                    warp_params.append(tfm)
+                if save_output_images:
+                    # also save kalman images
+                    cv2.imwrite(osp.join(kalman_small_image_folder, f'{ii}.png'),
+                                kalman_small_img)
+                    cv2.imwrite(osp.join(kalman_medium_image_folder,
+                                            f'{ii}.png'),
+                                kalman_medium_img)
+                    cv2.imwrite(osp.join(kalman_large_image_folder, f'{ii}.png'),
+                                kalman_large_img)
 
-                    if save_output_images:
-                        aligned_bgr_img = np.asarray(aligned_rgb_img,
-                                                     dtype=np.uint8)[:, :, ::-1]
+                    if aligned_rgb_img is not None:
+                        bgr_tensor_input = to_input(aligned_rgb_img)
+                        feature, _ = model(bgr_tensor_input)
+                        features.append(feature.detach())
+                        frame_nums.append(ii)
+                        warp_params.append(tfm)
+                        aligned_bgr_img = np.asarray(
+                            aligned_rgb_img,
+                            dtype=np.uint8)[:, :, ::-1]
                         cv2.imwrite(osp.join(image_folder, f'{ii}.png'),
                                     aligned_bgr_img)
 
-                        # also save kalman images
-                        # kalman_small_img = kalman_small_img[:, :, ::-1]
-                        cv2.imwrite(osp.join(kalman_small_image_folder, f'{ii}.png'),
-                                    kalman_small_img)
-                        # kalman_medium_img = np.asarray(kalman_medium_img,
-                        #                                dtype=np.uint8)[:, :, ::-1]
-                        cv2.imwrite(osp.join(kalman_medium_image_folder,
-                                             f'{ii}.png'),
-                                    kalman_medium_img)
-                        # kalman_large_img = np.asarray(kalman_large_img,
-                        #                               dtype=np.uint8)[:, :, ::-1]
-                        cv2.imwrite(osp.join(kalman_large_image_folder, f'{ii}.png'),
-                                    kalman_large_img)
 
 
                 label_index += 1
